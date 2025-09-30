@@ -1,3 +1,4 @@
+// AnalysisPage.jsx
 import React, { useState, useEffect } from "react";
 import "./AnalysisPage.css";
 
@@ -119,20 +120,36 @@ function AnalysisPage() {
               ].map((category) => (
                 <li key={category}>
                   <b>{category}:</b>{" "}
-                  {result?.health_impact_trends && result?.health_impact_trends[category] !== undefined
+                  {result?.health_impact_trends &&
+                  result?.health_impact_trends[category] !== undefined
                     ? result.health_impact_trends[category]
                     : 0}
                 </li>
               ))}
             </ul>
 
-            {/* Display charts if present */}
-            {result?.charts?.visualizations && (
+            {/* Display graphs if present */}
+            {result?.charts?.vision_distribution_by_age && (
               <>
-                <h3>Visualizations:</h3>
+                <h3>Vision Risk Distribution by Age Group:</h3>
                 <img
-                  src={result.charts.visualizations}
-                  alt="Data Visualizations"
+                  src={result.charts.vision_distribution_by_age}
+                  alt="Vision Risk Distribution by Age Group"
+                  style={{
+                    maxWidth: "100%",
+                    marginTop: 16,
+                    borderRadius: 10,
+                    boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
+                  }}
+                />
+              </>
+            )}
+            {result?.charts?.vision_risk_line_chart && (
+              <>
+                <h3>Vision Risk Category Line Chart:</h3>
+                <img
+                  src={result.charts.vision_risk_line_chart}
+                  alt="Vision Risk Category Line Chart"
                   style={{
                     maxWidth: "100%",
                     marginTop: 20,
@@ -177,7 +194,9 @@ function AnalysisPage() {
           </div>
         )}
 
-        {result && result.error && <div className="error-message">{result.error}</div>}
+        {result && result.error && (
+          <div className="error-message">{result.error}</div>
+        )}
       </div>
     </div>
   );
