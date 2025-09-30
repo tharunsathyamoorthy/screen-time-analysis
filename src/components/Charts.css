@@ -1,0 +1,25 @@
+.chart-section {
+  background: #fff;
+  border-radius: 13px;
+  box-shadow: 0 2px 13px rgba(88, 120, 212, 0.10);
+  padding: 2rem 2.2rem;
+  margin: 2rem auto;
+  max-width: 920px;
+  width: 100%;
+}
+
+.chart-section h2 {
+  color: #2067d8;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+}
+
+.chart-container {
+  margin-top: 1.5rem;
+  background: #f7fbfc;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 8px rgba(126, 150, 201, 0.10);
+  overflow-x: auto;
+}

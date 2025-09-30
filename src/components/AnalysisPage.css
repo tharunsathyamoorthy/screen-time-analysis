@@ -1,0 +1,214 @@
+.center-outer {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: #f5f7fb;
+  padding: 24px 0;
+  box-sizing: border-box;
+}
+
+.analysis-section {
+  padding: 48px 44px;
+  max-width: 900px;
+  width: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #222;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 10px 42px rgba(30, 55, 120, 0.11);
+}
+
+.analysis-section h2 {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.analysis-section h3 {
+  font-size: 1.19rem;
+  margin-top: 28px;
+  margin-bottom: 12px;
+  color: #2067d8;
+  font-weight: 500;
+}
+
+.analysis-section p {
+  margin-bottom: 19px;
+  font-size: 1.09rem;
+  color: #324352;
+  font-weight: 400;
+}
+
+.upload-area {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin: 24px 0 16px 0;
+  flex-wrap: wrap;
+}
+
+.upload-area input[type="file"] {
+  padding: 7px 10px;
+  border: 1.4px solid #ccd2ea;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 1rem;
+}
+
+.primary-btn {
+  padding: 11px 33px;
+  background: linear-gradient(95deg, #2067d8 65%, #4896ee 100%);
+  color: #fff;
+  font-size: 1.11rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.09s;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 7px 0 rgba(59, 91, 241, 0.07);
+}
+
+.primary-btn:disabled {
+  background: #bad1f6;
+  color: #444;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.primary-btn:not(:disabled):hover,
+.primary-btn:focus-visible:not(:disabled) {
+  background: linear-gradient(97deg, #1752a2 68%, #257ac2 100%);
+  transform: translateY(-1.5px) scale(1.015);
+}
+
+.error-message {
+  color: #d32f2f;
+  font-weight: 600;
+  margin-top: 18px;
+  font-size: 1.08rem;
+  letter-spacing: 0.4px;
+}
+
+.results {
+  margin-top: 28px;
+  /* Add horizontal scroll */
+  overflow-x: auto;
+  width: 100%;
+}
+
+.results h3 {
+  font-size: 1.18rem;
+  margin-top: 28px;
+  margin-bottom: 11px;
+  font-weight: 500;
+  color: #2067d8;
+}
+
+.results ul {
+  padding-left: 18px;
+  margin: 0 0 22px 18px;
+  list-style-type: disc;
+}
+
+.results img {
+  background: #fafaff;
+  border: 2px solid #c4dafd;
+  border-radius: 21px;
+  box-shadow: 0 8px 32px rgba(30, 96, 255, 0.09);
+  margin: 8px 0 22px 0;
+  max-width: 100%;
+  display: block;
+}
+
+.device-summary {
+  background: #f0f4ff;
+  border: 1.5px solid #9bbcf9;
+  padding: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  font-size: 0.96rem;
+  color: #264b84;
+}
+
+.results table {
+  border-collapse: collapse;
+  margin-bottom: 28px;
+  background: #fafaff;
+  border-radius: 11px;
+  font-size: 1.01rem;
+  box-shadow: 0 2px 15px rgba(37, 85, 152, 0.07);
+  min-width: 900px; /* Minimum width for wide tables */
+  table-layout: auto; /* Flexible layout */
+  width: 100%;
+}
+
+.results caption {
+  caption-side: top;
+  font-weight: 700;
+  font-size: 1.3rem;
+  text-align: left;
+  padding-bottom: 12px;
+  color: #2067d8;
+}
+
+.results th,
+.results td {
+  border: 1px solid #e4e6f1;
+  padding: 12px 12px;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap; /* Prevent wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.results th {
+  background: #eef4fb;
+  font-weight: 700;
+  color: #204070;
+  font-size: 1.07rem;
+}
+
+.results tbody tr {
+  transition: background 0.12s;
+}
+
+.results tbody tr:hover {
+  background: #eff9ff;
+}
+
+@media (max-width: 900px) {
+  .analysis-section {
+    max-width: 99vw;
+    padding: 16px 2vw;
+    border-radius: 0;
+    min-height: 100vh;
+    box-shadow: none;
+  }
+  .upload-area {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .primary-btn {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 9px;
+    padding: 11px 0;
+  }
+
+  .results table,
+  .results img {
+    max-width: 99vw;
+    border-radius: 12px;
+  }
+
+  .results {
+    overflow-x: scroll;
+  }
+}

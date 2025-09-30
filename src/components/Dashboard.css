@@ -1,0 +1,47 @@
+.dashboard-section {
+  max-width: 800px;
+  margin: auto;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-section h2 {
+  color: #2067d8;
+  font-size: 1.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.dashboard-section ul {
+  list-style: none;
+  padding-left: 0;
+  font-size: 1.05rem;
+}
+
+.dashboard-section li {
+  margin-bottom: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: #f5faff;
+  border-left: 4px solid #2067d8;
+  border-radius: 4px;
+}
+
+.file-summary {
+  margin-top: 2rem;
+  padding: 1.2rem 1.5rem;
+  background: #f9faff;
+  border-radius: 10px;
+  box-shadow: 0 2px 7px rgba(32, 103, 216, 0.08);
+}
+
+.file-summary h3 {
+  margin: 0 0 1rem 0;
+  color: #2067d8;
+  font-size: 1.3rem;
+}
+
+.file-summary p {
+  margin: 0.4rem 0;
+  font-size: 1rem;
+}

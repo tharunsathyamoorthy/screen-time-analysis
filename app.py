@@ -1,0 +1,206 @@
+# app.py (Flask Backend)
+
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import pandas as pd
+import numpy as np
+import difflib
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold, cross_val_score
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelEncoder
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from imblearn.over_sampling import SMOTE
+import xgboost as xgb
+import lightgbm as lgb
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+import uuid
+import math
+
+
+app = Flask(__name__)
+CORS(app)
+
+
+POSSIBLE_COLUMNS = {
+    "app_usage_time_min_day": 60,
+    "app_usage_time_min_per_day": 60,
+    "screen_time_min": 60,
+    "screen_time_mins": 60,
+    "minutes": 60,
+    "minute": 60,
+    "screen_time_sec": 3600,
+    "seconds": 3600,
+    "second": 3600,
+    "screen_on_time_hours_day": 1,
+    "screen_on_time_hours_per_day": 1,
+    "screen_on_time": 1,
+    "screen_time_hr": 1,
+    "hours": 1,
+    "hour": 1,
+    "average_screen_time_hours": 1,
+    "avg_daily_screen_time_hr": 1,
+    "total_screentime": 1,
+    "total_screen_time": 1,
+    "daily_usage_hours": 1,
+    "daily_screen_time_hours": 1,
+}
+
+
+VISION_CATEGORIES = [
+    "Low Exposure - Healthy Visual Ergonomics",
+    "Moderate Exposure - Normal Ocular Endurance",
+    "High Exposure - Digital Eye Strain Risk"
+]
+
+
+def assign_age_group(age):
+    if pd.isna(age):
+        return "Unknown"
+    group_start = (int(age) - 1) // 10 * 10 + 1
+    group_end = group_start + 9
+    return f"{group_start} - {group_end}"
+
+
+def preprocess(df):
+    normalized_cols = {
+        col: col.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_").replace("-", "_")
+        for col in df.columns
+    }
+    col_found, factor = None, None
+    for orig_col, norm_col in normalized_cols.items():
+        if norm_col in POSSIBLE_COLUMNS:
+            col_found = orig_col
+            factor = POSSIBLE_COLUMNS[norm_col]
+            break
+    if not col_found:
+        all_possible = list(POSSIBLE_COLUMNS.keys())
+        close_matches = set()
+        for norm_col in normalized_cols.values():
+            close_matches.update(difflib.get_close_matches(norm_col, all_possible, n=2))
+        return None, {
+            "error": "No recognizable screen time column found in dataset.",
+            "available_columns": list(normalized_cols.values()),
+            "expected_columns": list(close_matches)
+        }
+    df["screen_time_hr"] = df[col_found] / factor
+    return df, {"screen_time_column": col_found}
+
+
+def generate_visualizations(df):
+    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+    sns.histplot(df["Daily_Screen_Time_Hours"], bins=20, kde=True, color="blue", ax=axes[0, 0])
+    axes[0, 0].axvline(df["Daily_Screen_Time_Hours"].mean(), color="red", linestyle="--", label="Mean")
+    axes[0, 0].set_title("Distribution of Daily Screen Time (Hours)")
+    axes[0, 0].set_xlabel("Screen Time (hours)")
+    axes[0, 0].set_ylabel("Count")
+    axes[0, 0].legend()
+
+    usage_cols = ["Social_Media_Usage_Hours", "Productivity_App_Usage_Hours", "Gaming_App_Usage_Hours"]
+    avg_usage = df[usage_cols].mean().reset_index()
+    avg_usage.columns = ["App_Type", "Average_Hours"]
+    sns.barplot(x="App_Type", y="Average_Hours", data=avg_usage, ax=axes[0, 1])
+    axes[0, 1].set_title("Average Time Spent by App Category")
+    axes[0, 1].set_ylabel("Average Hours/Day")
+    axes[0, 1].tick_params(axis='x', rotation=45)
+
+    sns.boxplot(x="Gender", y="Daily_Screen_Time_Hours", data=df, ax=axes[1, 0])
+    axes[1, 0].set_title("Screen Time Distribution by Gender")
+
+    sns.boxplot(x="Age_Group", y="Daily_Screen_Time_Hours", data=df, ax=axes[1, 1])
+    axes[1, 1].set_title("Screen Time Distribution by Age Group")
+
+    plt.tight_layout()
+    plt.savefig('static/visualizations.png')
+    plt.close()
+
+
+@app.route('/upload', methods=['POST'])
+def upload_and_analyze():
+    if 'file' not in request.files:
+        return jsonify({"error": "CSV file is required"}), 400
+    file = request.files['file']
+    try:
+        df = pd.read_csv(file)
+    except Exception as e:
+        return jsonify({"error": f"Failed to read CSV: {str(e)}"}), 400
+    df, info = preprocess(df)
+    if df is None:
+        return jsonify(info), 400
+
+    # Advanced features & encoding
+    if all(k in df.columns for k in ["Social_Media_Usage_Hours", "Gaming_App_Usage_Hours", "Productivity_App_Usage_Hours", "Daily_Screen_Time_Hours", "Age", "Gender", "Location"]):
+        df['Total_App_Usage'] = df['Social_Media_Usage_Hours'] + df['Gaming_App_Usage_Hours'] + df['Productivity_App_Usage_Hours']
+        df['Screen_App_Ratio'] = df['Daily_Screen_Time_Hours'] / (df['Total_App_Usage'] + 0.001)
+        df['Social_Media_Ratio'] = df['Social_Media_Usage_Hours'] / (df['Total_App_Usage'] + 0.001)
+        df['Gaming_Ratio'] = df['Gaming_App_Usage_Hours'] / (df['Total_App_Usage'] + 0.001)
+        df['Productivity_Ratio'] = df['Productivity_App_Usage_Hours'] / (df['Total_App_Usage'] + 0.001)
+        df['App_Diversity'] = df[['Social_Media_Usage_Hours', 'Gaming_App_Usage_Hours', 'Productivity_App_Usage_Hours']].std(axis=1)
+        df['Usage_Efficiency'] = df['Total_App_Usage'] / (df['Daily_Screen_Time_Hours'] + 0.001)
+
+        def assign_grp(age):
+            if age <= 25:
+                return "18-25"
+            elif age <= 35:
+                return "26-35"
+            elif age <= 45:
+                return "36-45"
+            elif age <= 55:
+                return "46-55"
+            else:
+                return "56+"
+        df["Age_Group"] = df["Age"].apply(assign_grp)
+
+        le_gender = LabelEncoder()
+        df['Gender_Encoded'] = le_gender.fit_transform(df['Gender'])
+        le_location = LabelEncoder()
+        df['Location_Encoded'] = le_location.fit_transform(df['Location'])
+
+        q1 = df["Daily_Screen_Time_Hours"].quantile(0.33)
+        q2 = df["Daily_Screen_Time_Hours"].quantile(0.66)
+
+        def predict_vision_risk(t):
+            if t <= q1:
+                return "Low Exposure - Healthy Visual Ergonomics"
+            elif t <= q2:
+                return "Moderate Exposure - Normal Ocular Endurance"
+            else:
+                return "High Exposure - Digital Eye Strain Risk"
+
+        df["Vision_Status"] = df["Daily_Screen_Time_Hours"].apply(predict_vision_risk)
+    else:
+        df["Vision_Status"] = df["screen_time_hr"].apply(
+            lambda t: "High Exposure - Digital Eye Strain Risk" if t > df["screen_time_hr"].mean()
+            else ("Low Exposure - Healthy Visual Ergonomics" if t < df["screen_time_hr"].mean() else "Moderate Exposure - Normal Ocular Endurance")
+        )
+
+    # Generate visualization and save it
+    generate_visualizations(df)
+
+    # Prepare results
+    processed_data_sample = df.head(10).to_dict(orient="records")
+    avg_screen_time = df["screen_time_hr"].mean()
+    threshold = avg_screen_time
+    exceed_pct = (df["screen_time_hr"] > threshold).mean() * 100
+    health_trends = df["Vision_Status"].value_counts().reindex(VISION_CATEGORIES, fill_value=0).to_dict()
+
+    return jsonify({
+        "average_screen_time_hours": avg_screen_time,
+        "recommendation_hours": threshold,
+        "percentage_exceeding_recommendation": exceed_pct,
+        "health_impact_trends": health_trends,
+        "screen_time_column": info["screen_time_column"],
+        "processed_data_sample": processed_data_sample,
+        "charts": {
+            "visualizations": "/static/visualizations.png"
+        }
+    })
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
