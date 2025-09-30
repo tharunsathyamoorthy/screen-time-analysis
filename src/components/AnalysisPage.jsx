@@ -48,9 +48,7 @@ function AnalysisPage() {
         try {
           const errData = await res.json();
           errMsg = errData.error || errMsg;
-        } catch {
-          /* ignore JSON parse errors */
-        }
+        } catch {}
         throw new Error(errMsg);
       }
       const data = await res.json();
@@ -128,27 +126,13 @@ function AnalysisPage() {
               ))}
             </ul>
 
-            {result?.charts?.vision_distribution_by_age && (
+            {/* Display charts if present */}
+            {result?.charts?.visualizations && (
               <>
-                <h3>Vision Risk Distribution by Age Group:</h3>
+                <h3>Visualizations:</h3>
                 <img
-                  src={result.charts.vision_distribution_by_age}
-                  alt="Vision Risk Distribution by Age Group"
-                  style={{
-                    maxWidth: "100%",
-                    marginTop: 16,
-                    borderRadius: 10,
-                    boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
-                  }}
-                />
-              </>
-            )}
-            {result?.charts?.vision_risk_line_chart && (
-              <>
-                <h3>Vision Risk Category Line Chart:</h3>
-                <img
-                  src={result.charts.vision_risk_line_chart}
-                  alt="Vision Risk Category Line Chart"
+                  src={result.charts.visualizations}
+                  alt="Data Visualizations"
                   style={{
                     maxWidth: "100%",
                     marginTop: 20,
@@ -158,6 +142,7 @@ function AnalysisPage() {
                 />
               </>
             )}
+
             {result?.device_usage_summary && (
               <>
                 <h3>Device/App Usage Summary (if available):</h3>
