@@ -1,5 +1,3 @@
-# app.py (Flask Backend)
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
@@ -21,10 +19,8 @@ import os
 import uuid
 import math
 
-
 app = Flask(__name__)
 CORS(app)
-
 
 POSSIBLE_COLUMNS = {
     "app_usage_time_min_day": 60,
@@ -50,13 +46,11 @@ POSSIBLE_COLUMNS = {
     "daily_screen_time_hours": 1,
 }
 
-
 VISION_CATEGORIES = [
     "Low Exposure - Healthy Visual Ergonomics",
     "Moderate Exposure - Normal Ocular Endurance",
     "High Exposure - Digital Eye Strain Risk"
 ]
-
 
 def assign_age_group(age):
     if pd.isna(age):
@@ -64,7 +58,6 @@ def assign_age_group(age):
     group_start = (int(age) - 1) // 10 * 10 + 1
     group_end = group_start + 9
     return f"{group_start} - {group_end}"
-
 
 def preprocess(df):
     normalized_cols = {
@@ -89,7 +82,6 @@ def preprocess(df):
         }
     df["screen_time_hr"] = df[col_found] / factor
     return df, {"screen_time_column": col_found}
-
 
 def generate_visualizations(df):
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
@@ -116,9 +108,17 @@ def generate_visualizations(df):
     axes[1, 1].set_title("Screen Time Distribution by Age Group")
 
     plt.tight_layout()
-    plt.savefig('static/visualizations.png')
+
+    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    if not os.path.exists(static_folder):
+        os.makedirs(static_folder)
+
+    filename = f"visualizations_{uuid.uuid4().hex}.png"
+    filepath = os.path.join(static_folder, filename)
+    plt.savefig(filepath)
     plt.close()
 
+    return f"/static/{filename}"
 
 @app.route('/upload', methods=['POST'])
 def upload_and_analyze():
@@ -133,8 +133,9 @@ def upload_and_analyze():
     if df is None:
         return jsonify(info), 400
 
-    # Advanced features & encoding
-    if all(k in df.columns for k in ["Social_Media_Usage_Hours", "Gaming_App_Usage_Hours", "Productivity_App_Usage_Hours", "Daily_Screen_Time_Hours", "Age", "Gender", "Location"]):
+    # Advanced features & encoding if applicable
+    if all(k in df.columns for k in ["Social_Media_Usage_Hours", "Gaming_App_Usage_Hours", "Productivity_App_Usage_Hours", 
+                                     "Daily_Screen_Time_Hours", "Age", "Gender", "Location"]):
         df['Total_App_Usage'] = df['Social_Media_Usage_Hours'] + df['Gaming_App_Usage_Hours'] + df['Productivity_App_Usage_Hours']
         df['Screen_App_Ratio'] = df['Daily_Screen_Time_Hours'] / (df['Total_App_Usage'] + 0.001)
         df['Social_Media_Ratio'] = df['Social_Media_Usage_Hours'] / (df['Total_App_Usage'] + 0.001)
@@ -179,10 +180,10 @@ def upload_and_analyze():
             else ("Low Exposure - Healthy Visual Ergonomics" if t < df["screen_time_hr"].mean() else "Moderate Exposure - Normal Ocular Endurance")
         )
 
-    # Generate visualization and save it
-    generate_visualizations(df)
+    # Generate charts and get url
+    visualization_url = generate_visualizations(df)
 
-    # Prepare results
+    # Prepare response
     processed_data_sample = df.head(10).to_dict(orient="records")
     avg_screen_time = df["screen_time_hr"].mean()
     threshold = avg_screen_time
@@ -197,7 +198,7 @@ def upload_and_analyze():
         "screen_time_column": info["screen_time_column"],
         "processed_data_sample": processed_data_sample,
         "charts": {
-            "visualizations": "/static/visualizations.png"
+            "visualizations": visualization_url
         }
     })
 
