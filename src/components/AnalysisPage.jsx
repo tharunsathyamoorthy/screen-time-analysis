@@ -119,7 +119,8 @@ function AnalysisPage() {
               ].map((category) => (
                 <li key={category}>
                   <b>{category}:</b>{" "}
-                  {result?.health_impact_trends && result?.health_impact_trends[category] !== undefined
+                  {result?.health_impact_trends &&
+                  result?.health_impact_trends[category] !== undefined
                     ? result.health_impact_trends[category]
                     : 0}
                 </li>
@@ -130,16 +131,32 @@ function AnalysisPage() {
             {result?.charts?.visualizations && (
               <>
                 <h3>Visualizations:</h3>
-                <img
-                  src={result.charts.visualizations}
-                  alt="Data Visualizations"
-                  style={{
-                    maxWidth: "100%",
-                    marginTop: 20,
-                    borderRadius: 10,
-                    boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
-                  }}
-                />
+                {Array.isArray(result.charts.visualizations) ? (
+                  result.charts.visualizations.map((imgUrl, i) => (
+                    <img
+                      key={i}
+                      src={imgUrl}
+                      alt={`Visualization ${i + 1}`}
+                      style={{
+                        maxWidth: "100%",
+                        marginTop: 20,
+                        borderRadius: 10,
+                        boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                  ))
+                ) : (
+                  <img
+                    src={result.charts.visualizations}
+                    alt="Data Visualizations"
+                    style={{
+                      maxWidth: "100%",
+                      marginTop: 20,
+                      borderRadius: 10,
+                      boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                )}
               </>
             )}
 
@@ -168,7 +185,9 @@ function AnalysisPage() {
                   result.processed_data_sample.map((row, idx) => (
                     <tr key={idx}>
                       {Object.values(row).map((val, i) => (
-                        <td key={i}>{val === null || val === undefined ? "-" : val.toString()}</td>
+                        <td key={i}>
+                          {val === null || val === undefined ? "-" : val.toString()}
+                        </td>
                       ))}
                     </tr>
                   ))}
