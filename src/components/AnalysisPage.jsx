@@ -115,7 +115,7 @@ function AnalysisPage() {
               {[
                 "Low Exposure - Healthy Visual Ergonomics",
                 "Moderate Exposure - Normal Ocular Endurance",
-                "High Exposure - Digital Eye Strain Risk",
+                "High Exposure - Digital Eye Strain Risk"
               ].map((category) => (
                 <li key={category}>
                   <b>{category}:</b>{" "}
@@ -127,16 +127,28 @@ function AnalysisPage() {
               ))}
             </ul>
 
-            {/* Display charts if present */}
+            {/* Display all charts if present */}
             {result?.charts?.visualizations && (
               <>
                 <h3>Visualizations:</h3>
-                {Array.isArray(result.charts.visualizations) ? (
-                  result.charts.visualizations.map((imgUrl, i) => (
+                {Array.isArray(result.charts.visualizations)
+                  ? result.charts.visualizations.map((imgUrl, idx) => (
+                      <img
+                        key={idx}
+                        src={imgUrl}
+                        alt={`Visualization ${idx + 1}`}
+                        style={{
+                          maxWidth: "100%",
+                          marginTop: 20,
+                          borderRadius: 10,
+                          boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
+                        }}
+                      />
+                    ))
+                  : (
                     <img
-                      key={i}
-                      src={imgUrl}
-                      alt={`Visualization ${i + 1}`}
+                      src={result.charts.visualizations}
+                      alt="Data Visualizations"
                       style={{
                         maxWidth: "100%",
                         marginTop: 20,
@@ -144,19 +156,7 @@ function AnalysisPage() {
                         boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
                       }}
                     />
-                  ))
-                ) : (
-                  <img
-                    src={result.charts.visualizations}
-                    alt="Data Visualizations"
-                    style={{
-                      maxWidth: "100%",
-                      marginTop: 20,
-                      borderRadius: 10,
-                      boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
-                    }}
-                  />
-                )}
+                  )}
               </>
             )}
 
@@ -185,9 +185,7 @@ function AnalysisPage() {
                   result.processed_data_sample.map((row, idx) => (
                     <tr key={idx}>
                       {Object.values(row).map((val, i) => (
-                        <td key={i}>
-                          {val === null || val === undefined ? "-" : val.toString()}
-                        </td>
+                        <td key={i}>{val === null || val === undefined ? "-" : val.toString()}</td>
                       ))}
                     </tr>
                   ))}
@@ -196,7 +194,9 @@ function AnalysisPage() {
           </div>
         )}
 
-        {result && result.error && <div className="error-message">{result.error}</div>}
+        {result && result.error && (
+          <div className="error-message">{result.error}</div>
+        )}
       </div>
     </div>
   );
