@@ -84,41 +84,45 @@ def preprocess(df):
     return df, {"screen_time_column": col_found}
 
 def generate_visualizations(df):
-    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-
-    sns.histplot(df["Daily_Screen_Time_Hours"], bins=20, kde=True, color="blue", ax=axes[0, 0])
-    axes[0, 0].axvline(df["Daily_Screen_Time_Hours"].mean(), color="red", linestyle="--", label="Mean")
-    axes[0, 0].set_title("Distribution of Daily Screen Time (Hours)")
-    axes[0, 0].set_xlabel("Screen Time (hours)")
-    axes[0, 0].set_ylabel("Count")
-    axes[0, 0].legend()
-
-    usage_cols = ["Social_Media_Usage_Hours", "Productivity_App_Usage_Hours", "Gaming_App_Usage_Hours"]
-    avg_usage = df[usage_cols].mean().reset_index()
-    avg_usage.columns = ["App_Type", "Average_Hours"]
-    sns.barplot(x="App_Type", y="Average_Hours", data=avg_usage, ax=axes[0, 1])
-    axes[0, 1].set_title("Average Time Spent by App Category")
-    axes[0, 1].set_ylabel("Average Hours/Day")
-    axes[0, 1].tick_params(axis='x', rotation=45)
-
-    sns.boxplot(x="Gender", y="Daily_Screen_Time_Hours", data=df, ax=axes[1, 0])
-    axes[1, 0].set_title("Screen Time Distribution by Gender")
-
-    sns.boxplot(x="Age_Group", y="Daily_Screen_Time_Hours", data=df, ax=axes[1, 1])
-    axes[1, 1].set_title("Screen Time Distribution by Age Group")
-
-    plt.tight_layout()
+    # First: Vision Risk Distribution
+    fig1, ax1 = plt.subplots(figsize=(7, 6))
+    status_counts = df['Vision_Status'].value_counts()
+    colors = ['green', 'orange', 'red']
+    bars = ax1.bar(status_counts.index, status_counts.values, color=colors[:len(status_counts)])
+    ax1.set_title("Vision Risk Distribution")
+    ax1.set_xlabel("Vision_Status")
+    ax1.set_ylabel("Count")
+    ax1.set_xticklabels(status_counts.index, rotation=45)
 
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     if not os.path.exists(static_folder):
         os.makedirs(static_folder)
+    filename1 = f"vision_risk_dist_{uuid.uuid4().hex}.png"
+    filepath1 = os.path.join(static_folder, filename1)
+    plt.tight_layout()
+    plt.savefig(filepath1)
+    plt.close(fig1)
 
-    filename = f"visualizations_{uuid.uuid4().hex}.png"
-    filepath = os.path.join(static_folder, filename)
-    plt.savefig(filepath)
-    plt.close()
+    # Second: Vision Risk by Age Group
+    fig2, ax2 = plt.subplots(figsize=(7,6))
+    if 'Age_Group' not in df.columns:
+        age_group_map = df["Age"].apply(lambda age: "Unknown" if pd.isna(age) else (
+            "18-25" if age <= 25 else "26-35" if age <= 35 else "36-45" if age <= 45 else "46-55" if age <= 55 else "56+"))
+        df["Age_Group"] = age_group_map
+    age_risk = pd.crosstab(df["Age_Group"], df["Vision_Status"])
+    age_risk.plot(kind="bar", ax=ax2)
+    ax2.set_title("Vision Risk by Age Group")
+    ax2.set_xlabel("Age_Group")
+    ax2.set_ylabel("count")
+    plt.legend(title="Risk Category")
+    plt.tight_layout()
+    filename2 = f"vision_age_group_{uuid.uuid4().hex}.png"
+    filepath2 = os.path.join(static_folder, filename2)
+    plt.savefig(filepath2)
+    plt.close(fig2)
 
-    return f"/static/{filename}"
+    # Return both image URLs
+    return [f"/static/{filename1}", f"/static/{filename2}"]
 
 @app.route('/upload', methods=['POST'])
 def upload_and_analyze():
@@ -180,8 +184,8 @@ def upload_and_analyze():
             else ("Low Exposure - Healthy Visual Ergonomics" if t < df["screen_time_hr"].mean() else "Moderate Exposure - Normal Ocular Endurance")
         )
 
-    # Generate charts and get url
-    visualization_url = generate_visualizations(df)
+    # Generate charts and get urls
+    visualizations = generate_visualizations(df)
 
     # Prepare response
     processed_data_sample = df.head(10).to_dict(orient="records")
@@ -198,10 +202,9 @@ def upload_and_analyze():
         "screen_time_column": info["screen_time_column"],
         "processed_data_sample": processed_data_sample,
         "charts": {
-            "visualizations": visualization_url
+            "visualizations": visualizations
         }
     })
-
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
