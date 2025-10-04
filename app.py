@@ -220,6 +220,58 @@ def upload_and_analyze():
     # Generate charts and get urls
     visualization_urls = generate_visualizations(df)
 
+    # Precautions for each risk group
+    HIGH_VISION_RISK_PRECAUTIONS = [
+        "Limit continuous screen time to no more than 30–40 minutes at a stretch.",
+        "Follow the 20-20-20 rule: take a 20-second break every 20 minutes by looking at something 20 feet away.",
+        "Use blue light filters or night modes on all devices, especially after sunset.",
+        "Ensure proper ambient lighting to reduce glare and avoid working in dark rooms.",
+        "Place screens at eye level and about 18–24 inches from your eyes.",
+        "Blink frequently to minimize dryness; consider lubricating drops if needed.",
+        "Schedule regular eye exams and seek advice if persistent discomfort occurs.",
+        "Avoid device usage 1 hour before bedtime to improve sleep quality.",
+        "Use anti-reflective screen protectors where possible.",
+        "Adjust device font size and contrast for maximum comfort.",
+        "Keep device screens clean to avoid straining over smudges or dirt.",
+        "Practice comprehensive eye exercises (focus shifting, rolling, palming).",
+        "Limit multitasking across multiple screens/devices at the same time.",
+        "Maintain ergonomic posture, supporting your back, shoulders, and neck.",
+        "Consider using screen time management apps to monitor and reduce your digital exposure.",
+    ]
+
+    MODERATE_VISION_RISK_PRECAUTIONS = [
+        "Set daily limits for total recreational screen time, aiming for under 2 hours outside work/study.",
+        "Integrate frequent, short breaks to avoid prolonged sessions.",
+        "Use blue light reduction settings in the evening and increase ambient light during the day.",
+        "Increase physical activity and balance screen work with outdoor breaks.",
+        "Monitor for early symptoms: dryness, headaches, blurry vision.",
+        "Prioritize larger screens for reading or extended work sessions over small mobile devices.",
+        "Avoid staring at small text or poorly contrasted screens for long periods.",
+        "Check device ergonomics—screen tilt, height, and brightness should minimize squinting.",
+        "Plan device-free family or personal time blocks daily.",
+        "Encourage children/adolescents to follow healthy device habits with gentle supervision.",
+        "Wear prescription eyewear if indicated and consult an optometrist for special screen-use lenses if discomfort arises.",
+    ]
+
+    LOW_VISION_RISK_PRECAUTIONS = [
+        "Continue healthy visual habits and regular blinking.",
+        "Include screen-free activities in your daily routine.",
+        "Maintain good lighting at your workspace.",
+        "Stay hydrated for optimal eye health.",
+        "Monitor for new screen-related symptoms, even if rare.",
+        "Adjust brightness to natural room light; avoid overly bright/dim screens.",
+        "Periodically check your device usage to ensure minimal risk.",
+        "Dedicate time for outdoor eyesight exercise (natural focusing).",
+        "Avoid using screens while commuting or in moving vehicles.",
+        "Prioritize sleep routines by finishing screen work well before bedtime.",
+    ]
+
+    vision_precautions = {
+        "High Exposure - Digital Eye Strain Risk": HIGH_VISION_RISK_PRECAUTIONS,
+        "Moderate Exposure - Normal Ocular Endurance": MODERATE_VISION_RISK_PRECAUTIONS,
+        "Low Exposure - Healthy Visual Ergonomics": LOW_VISION_RISK_PRECAUTIONS,
+    }
+
     # Prepare response
     processed_data_sample = df.head(10).to_dict(orient="records")
     avg_screen_time = df["screen_time_hr"].mean()
@@ -236,7 +288,8 @@ def upload_and_analyze():
         "processed_data_sample": processed_data_sample,
         "charts": {
             "visualizations": visualization_urls
-        }
+        },
+        "vision_precautions": vision_precautions
     })
 
 if __name__ == "__main__":
