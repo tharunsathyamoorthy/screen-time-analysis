@@ -160,6 +160,23 @@ function AnalysisPage() {
               </>
             )}
 
+            {/* NEW: Display Vision Precautions by Category */}
+            {result?.vision_precautions && (
+              <div style={{ marginTop: "30px" }}>
+                <h3>Precautions for Each Vision Risk Category:</h3>
+                {Object.entries(result.vision_precautions).map(([category, points]) => (
+                  <div key={category} style={{ marginBottom: "20px" }}>
+                    <b>{category}</b>
+                    <ul>
+                      {points.map((pt, idx) => (
+                        <li key={idx}>{pt}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {result?.device_usage_summary && (
               <>
                 <h3>Device/App Usage Summary (if available):</h3>
