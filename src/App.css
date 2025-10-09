@@ -3,8 +3,9 @@ html, body, #root {
   height: 100%;
   margin: 0;
   font-family: 'Segoe UI', Arial, sans-serif;
-  background-color: #f8fafc;
+  background: linear-gradient(135deg, #e3ecfa 0%, #f8fafc 100%);
   color: #222;
+  min-height: 100vh;
 }
 
 /* Layout */
@@ -12,14 +13,18 @@ html, body, #root {
   display: flex;
   min-height: 100vh;
   width: 100vw;
+  background: transparent;
 }
 
 .content {
   flex: 1;
   padding: 2.5rem 2rem;
-  background: #f8fafc;
+  background: transparent;
   margin-left: 215px; /* match sidebar width */
   transition: margin 0.25s;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 @media (max-width: 930px) {
@@ -28,6 +33,22 @@ html, body, #root {
     margin-top: 72px;
     padding: 1.2rem 0.9rem;
   }
+}
+
+/* Card style for main content */
+.content > * {
+  background: #fff;
+  border-radius: 20px;
+  border: 1.5px solid #e3ecfa;
+  box-shadow: 0 6px 32px 0 rgba(32, 103, 216, 0.10), 0 2px 8px 0 rgba(0,0,0,0.04);
+  padding: 2.5rem 2.5rem;
+  transition: box-shadow 0.2s, transform 0.2s;
+  margin-bottom: 0.5rem;
+}
+
+.content > *:hover {
+  box-shadow: 0 12px 36px 0 rgba(32, 103, 216, 0.16), 0 4px 16px 0 rgba(0,0,0,0.06);
+  transform: translateY(-2px) scale(1.01);
 }
 
 /* Animation */
@@ -51,10 +72,116 @@ html, body, #root {
   background: #f7faff;
   padding: 2rem 1.5rem;
   text-align: center;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 500;
   line-height: 1.6;
   color: #436079;
-  box-shadow: inset 0px 3px 9px rgba(32, 103, 216, 0.05);
+  box-shadow: 0 2px 8px rgba(32, 103, 216, 0.07);
+  margin: 1.5rem 0;
+}
+
+/* Add neat scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  background: #e3ecfa;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #b5c9e8;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8faedc;
+}
+
+/* Headings and text */
+h1, h2, h3, h4, h5 {
+  color: #2056a8;
+  font-weight: 800;
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 #e3ecfa;
+}
+
+a {
+  color: #2056a8;
+  text-decoration: none;
+  transition: color 0.2s, border-bottom 0.2s;
+  border-bottom: 1.5px solid transparent;
+}
+a:hover {
+  color: #1a417a;
+  border-bottom: 1.5px solid #3282e6;
+  text-decoration: none;
+}
+
+/* Buttons */
+button, .btn {
+  background: linear-gradient(90deg, #2056a8 0%, #3282e6 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.85rem 1.7rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(32, 103, 216, 0.09);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  margin: 0.2rem 0.3rem;
+  letter-spacing: 0.01em;
+}
+
+button:hover, .btn:hover {
+  background: linear-gradient(90deg, #3282e6 0%, #2056a8 100%);
+  box-shadow: 0 6px 18px rgba(32, 103, 216, 0.17);
+  transform: translateY(-1px) scale(1.03);
+}
+
+/* Inputs with more modern look */
+input, select, textarea {
+  border: 1.5px solid #b5c9e8;
+  border-radius: 9px;
+  padding: 0.8rem 1.1rem;
+  font-size: 1.02rem;
+  background: #f8fafc;
+  margin-bottom: 1.2rem;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 4px rgba(32, 103, 216, 0.04);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #3282e6;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(32, 103, 216, 0.09);
+}
+
+/* Toastify overrides */
+.Toastify__toast {
+  border-radius: 12px !important;
+  font-size: 1.04rem;
+  font-weight: 600;
+  box-shadow: 0 2px 12px rgba(32, 103, 216, 0.09);
+  background: #f7faff !important;
+  color: #2056a8 !important;
+}
+
+/* Responsive improvements for cards */
+@media (max-width: 600px) {
+  .content > * {
+    padding: 1.1rem 0.7rem;
+    border-radius: 12px;
+  }
+}
+
+
+/* Toastify overrides */
+.Toastify__toast {
+  border-radius: 12px !important;
+  font-size: 1.04rem;
+  font-weight: 600;
+  box-shadow: 0 2px 12px rgba(32, 103, 216, 0.09);
+  background: #f7faff !important;
+  color: #2056a8 !important;
 }

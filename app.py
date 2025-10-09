@@ -301,9 +301,8 @@ def upload_and_analyze():
     }
 
     processed_data_sample = df.head(10).to_dict(orient="records")
-    # avg_screen_time = df["screen_time_hr"].mean()
-    threshold = 6  # Fixed threshold: 6 hours per day
     avg_screen_time = df["screen_time_hr"].mean()
+    threshold = avg_screen_time
     exceed_pct = (df["screen_time_hr"] > threshold).mean() * 100
     health_trends = df["Vision_Status"].value_counts().reindex(VISION_CATEGORIES, fill_value=0).to_dict()
 
@@ -319,87 +318,6 @@ def upload_and_analyze():
         },
         "vision_precautions": vision_precautions,
         "model_test_accuracy": float(accuracy)
-    })
-
-@app.route('/predict', methods=['POST'])
-def predict_for_person():
-    """
-    Expects JSON with keys:
-    - Age (int)
-    - Gender (str)
-    - Location (str)
-    - Daily_Screen_Time_Hours (float)
-    - Social_Media_Usage_Hours (float)
-    - Gaming_App_Usage_Hours (float)
-    - Productivity_App_Usage_Hours (float)
-    - Number_of_Apps_Used (int)
-    """
-    data = request.get_json()
-    required_fields = [
-        "Age", "Gender", "Location", "Daily_Screen_Time_Hours",
-        "Social_Media_Usage_Hours", "Gaming_App_Usage_Hours",
-        "Productivity_App_Usage_Hours", "Number_of_Apps_Used"
-    ]
-    for field in required_fields:
-        if field not in data:
-            return jsonify({"error": f"Missing field: {field}"}), 400
-
-    # Feature engineering (same as in upload_and_analyze)
-    age = data["Age"]
-    gender = data["Gender"]
-    location = data["Location"]
-    daily_screen = data["Daily_Screen_Time_Hours"]
-    social = data["Social_Media_Usage_Hours"]
-    gaming = data["Gaming_App_Usage_Hours"]
-    productivity = data["Productivity_App_Usage_Hours"]
-    num_apps = data["Number_of_Apps_Used"]
-
-    total_app = social + gaming + productivity
-    screen_app_ratio = daily_screen / (total_app + 0.001)
-    social_ratio = social / (total_app + 0.001)
-    gaming_ratio = gaming / (total_app + 0.001)
-    prod_ratio = productivity / (total_app + 0.001)
-    app_diversity = np.std([social, gaming, productivity])
-    usage_efficiency = total_app / (daily_screen + 0.001)
-
-    # Use label encoders from training (fit on dummy data if not present)
-    # For stateless API, we must fit encoders on-the-fly or persist them.
-    # Here, we fit on example values for demo purposes.
-    le_gender = LabelEncoder()
-    le_gender.fit(["Male", "Female"])
-    try:
-        gender_encoded = le_gender.transform([gender])[0]
-    except:
-        gender_encoded = le_gender.transform(["Male"])[0]
-
-    le_location = LabelEncoder()
-    le_location.fit([location])  # In production, fit on all known locations
-    location_encoded = 0  # Only one location, so 0
-
-    # Feature order must match model training
-    features = [
-        'Social_Media_Usage_Hours', 'Gaming_App_Usage_Hours', 'Productivity_App_Usage_Hours',
-        'Daily_Screen_Time_Hours', 'Gender_Encoded', 'Location_Encoded'
-    ]
-    X_person = np.array([[
-        social, gaming, productivity, daily_screen, gender_encoded, location_encoded
-    ]])
-
-    # Use the same model definition as in upload_and_analyze
-    # Rebuild and retrain model if not persisted (stateless demo)
-    # In production, load model weights and encoders from disk
-
-    # For demo, retrain a dummy model on-the-fly (not recommended for production)
-    # Here, we just return a dummy prediction for demonstration
-    # Remove the following block and use a persisted model in production
-
-    # Dummy model: always return "Moderate Exposure"
-    pred_idx = 1  # Moderate Exposure
-    inv_label_mapping = {0: "Low Exposure - Healthy Visual Ergonomics", 1: "Moderate Exposure - Normal Ocular Endurance", 2: "High Exposure - Digital Eye Strain Risk"}
-    result = inv_label_mapping.get(pred_idx, "Low Exposure - Healthy Visual Ergonomics")
-
-    return jsonify({
-        "predicted_vision_risk": result
     })
 
 if __name__ == "__main__":
