@@ -56,6 +56,26 @@
   font-size: 1rem;
 }
 
+.upload-area input[type="text"],
+.upload-area input[type="number"] {
+  padding: 7px 10px;
+  border: 1.4px solid #ccd2ea;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 1rem;
+  color: #204070; /* Ensures strong visible text */
+  font-weight: 500;
+}
+
+/* Also apply a fallback for any input fields in your UI */
+input[type="text"],
+input[type="number"] {
+  color: #204070 !important; /* Dark blue for strong contrast */
+  background: #fff !important;
+  caret-color: #2067d8;
+  font-weight: 500;
+}
+
 .primary-btn {
   padding: 11px 33px;
   background: linear-gradient(95deg, #2067d8 65%, #4896ee 100%);
@@ -201,13 +221,11 @@
     margin-top: 9px;
     padding: 11px 0;
   }
-
   .results table,
   .results img {
     max-width: 99vw;
     border-radius: 12px;
   }
-
   .results {
     overflow-x: scroll;
   }

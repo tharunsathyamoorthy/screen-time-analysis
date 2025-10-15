@@ -23,3 +23,45 @@
   box-shadow: 0 1px 8px rgba(126, 150, 201, 0.10);
   overflow-x: auto;
 }
+
+/* Dropdown enhancements for readability */
+.chart-section select,
+.chart-section select option {
+  color: #204070 !important;
+  background: #fff !important;
+  opacity: 1 !important;
+}
+
+/* Muted but visible for genuinely disabled options */
+.chart-section select option[disabled] {
+  color: #b5b5bd !important;
+  background: #f1f3fb !important;
+  opacity: 1 !important;
+}
+
+/* Optional: style the dropdown itself for better integration */
+.chart-section select {
+  border: 1.4px solid #ccd2ea;
+  border-radius: 6px;
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1.5rem;
+  outline: none;
+  box-shadow: 0 2px 6px rgba(30, 90, 200, 0.09);
+  transition: border 0.13s;
+}
+
+.chart-section select:focus {
+  border: 1.4px solid #2067d8;
+}
+
+@media (max-width: 900px) {
+  .chart-section {
+    padding: 1rem 2vw;
+    border-radius: 8px;
+    margin: 1rem 0;
+  }
+  .chart-container {
+    padding: 0.5rem;
+  }
+}

@@ -16,7 +16,7 @@ import uuid
 app = Flask(__name__)
 CORS(app)
 
-# NEW: Global DataFrame to reuse for /analyze_age
+# Global DataFrame to reuse for /analyze_age
 uploaded_df = None
 
 POSSIBLE_COLUMNS = {
@@ -261,9 +261,6 @@ def upload_and_analyze():
     y = df["Vision_Status"].map(label_mapping).fillna(0).astype(int)
     y_cat = to_categorical(y, num_classes=len(VISION_CATEGORIES))
 
-    from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense
-
     X_train, X_test, y_train, y_test = train_test_split(X, y_cat, test_size=0.2, random_state=42, stratify=y)
 
     model = Sequential([
@@ -394,6 +391,33 @@ def analyze_age():
     if group_df.empty:
         return jsonify({"message": f"No records found for age group {group}."}), 404
 
+    # --- Model training and accuracy calculation for age group ---
+    # Use only group_df for training and evaluation
+    features = []
+    if all(col in group_df.columns for col in ['Social_Media_Usage_Hours', 'Gaming_App_Usage_Hours', 'Productivity_App_Usage_Hours', 'Daily_Screen_Time_Hours', 'Gender_Encoded', 'Location_Encoded']):
+        features = ['Social_Media_Usage_Hours', 'Gaming_App_Usage_Hours', 'Productivity_App_Usage_Hours', 'Daily_Screen_Time_Hours', 'Gender_Encoded', 'Location_Encoded']
+    else:
+        features = ['screen_time_hr']
+
+    X = group_df[features].fillna(0).values
+    label_mapping = {name: idx for idx, name in enumerate(VISION_CATEGORIES)}
+    y = group_df["Vision_Status"].map(label_mapping).fillna(0).astype(int)
+    y_cat = to_categorical(y, num_classes=len(VISION_CATEGORIES))
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y_cat, test_size=0.2, random_state=42, stratify=y)
+
+    model = Sequential([
+        Dense(64, activation='relu', input_shape=(X.shape[1],)),
+        Dense(32, activation='relu'),
+        Dense(len(VISION_CATEGORIES), activation='softmax')
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.fit(X_train, y_train, epochs=15, batch_size=16, verbose=0)
+
+    # Model accuracy evaluation and print to terminal for age group
+    loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+    print(f"Model Test Accuracy for Age Group {group}: {accuracy:.4f}")
+
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     if not os.path.exists(static_folder):
         os.makedirs(static_folder)
@@ -422,7 +446,6 @@ def analyze_age():
 
     chart_url = f"/static/{file_name}"
 
-    # Updated cols to include screen_time_hr instead of Predicted_Vision_Status
     cols = [c for c in ['Name', 'Age', 'Gender', 'Vision_Status', 'screen_time_hr'] if c in group_df.columns]
     records = group_df[cols].head(20).to_dict(orient='records')
 
