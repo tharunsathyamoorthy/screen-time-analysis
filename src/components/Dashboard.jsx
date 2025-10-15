@@ -9,10 +9,11 @@ function Dashboard({ data = [], fileInfo, columns = [] }) {
     )
   );
 
-  // ✅ Average time calculation
-  const avgTime = usageCol
+  // ✅ Average time calculation (matches backend Pandas .mean() logic)
+  const validRows = data.filter(row => usageCol && row[usageCol] !== null && row[usageCol] !== "" && !isNaN(Number(row[usageCol])));
+  const avgTime = usageCol && validRows.length > 0
     ? (
-        data.reduce((sum, row) => sum + (Number(row[usageCol]) || 0), 0) / data.length
+        validRows.reduce((sum, row) => sum + Number(row[usageCol]), 0) / validRows.length
       ).toFixed(2)
     : "N/A";
 

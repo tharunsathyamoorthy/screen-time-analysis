@@ -1,10 +1,41 @@
+body {
+  min-height: 100vh;
+  background: #f6f9fc;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  /* Add your sidebar styles here as needed */
+}
+
+/* Main content centers grid properly */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 5vh;
+}
+
+/* Updated dashboard-section CSS */
 .dashboard-section {
   max-width: 800px;
-  margin: auto;
+  margin: 6vh auto 4vh auto; /* Top/bottom margin to avoid "bottom sticking" */
   background: #fff;
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .dashboard-section h2 {
@@ -44,4 +75,17 @@
 .file-summary p {
   margin: 0.4rem 0;
   font-size: 1rem;
+}
+
+@media (max-width: 900px) {
+  .dashboard-section {
+    padding: 1rem 2vw;
+    max-width: 99vw;
+    border-radius: 8px;
+    margin-top: 3vh;
+    margin-bottom: 2vh;
+  }
+  .main-content {
+    padding-top: 2vh;
+  }
 }
