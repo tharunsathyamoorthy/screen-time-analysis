@@ -440,7 +440,7 @@ def analyze_age():
     chart_url = f"/static/{file_name}"
 
     # Return data and chart URL (include Predicted_Vision_Status if available)
-    cols = [c for c in ['Name', 'Age', 'Gender', 'Vision_Status', 'Predicted_Vision_Status'] if c in group_df.columns]
+    cols = [c for c in ['Name', 'Age', 'Gender', 'Vision_Status', 'screen_time_hr'] if c in group_df.columns]
     records = group_df[cols].head(20).to_dict(orient='records')
 
     vision_status_summary = counts.to_dict()
