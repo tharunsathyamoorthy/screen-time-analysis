@@ -2,15 +2,13 @@ import React from "react";
 import "./Dashboard.css";
 
 function Dashboard({ data = [], fileInfo, columns = [] }) {
-  // ✅ Smarter usage column detection based on your real column name
-  const usageCol = columns.find(col =>
-    ["screen time", "screentime", "avg_daily_screen_time_hr", "screen", "usage", "minutes"].some(keyword =>
-      col.toLowerCase().replace(/_/g, " ").includes(keyword)
-    )
+  // Force use of 'Daily_Screen_Time_Hours' for average calculation
+  const usageCol = "Daily_Screen_Time_Hours";
+  
+  // Accurate average (Pandas-style): mean of valid finite entries in Daily_Screen_Time_Hours
+  const validRows = data.filter(
+    row => usageCol && row[usageCol] !== null && row[usageCol] !== "" && isFinite(Number(row[usageCol]))
   );
-
-  // ✅ Average time calculation (matches backend Pandas .mean() logic)
-  const validRows = data.filter(row => usageCol && row[usageCol] !== null && row[usageCol] !== "" && !isNaN(Number(row[usageCol])));
   const avgTime = usageCol && validRows.length > 0
     ? (
         validRows.reduce((sum, row) => sum + Number(row[usageCol]), 0) / validRows.length
@@ -20,13 +18,10 @@ function Dashboard({ data = [], fileInfo, columns = [] }) {
   return (
     <div className="dashboard-section">
       <h2>Summary</h2>
-
       <ul>
         <li>Average Screen Time: <b>{avgTime}</b> hrs/day</li>
         <li>Total Participants: <b>{data.length}</b></li>
       </ul>
-
-      {/* Show file details if available */}
       {fileInfo ? (
         <div className="file-summary">
           <h3>📄 File Info</h3>
