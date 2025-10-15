@@ -7,6 +7,9 @@ function AnalysisPage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
+  const [age, setAge] = useState("");
+  const [ageAnalysis, setAgeAnalysis] = useState(null);
+  const [ageLoading, setAgeLoading] = useState(false);
 
   useEffect(() => {
     const savedResult = localStorage.getItem("analysisResult");
@@ -62,6 +65,31 @@ function AnalysisPage() {
     }
   };
 
+  const handleAgeAnalysis = async () => {
+    if (!age) {
+      setError("Please enter an age for analysis.");
+      return;
+    }
+    setAgeLoading(true);
+    setError("");
+    setAgeAnalysis(null);
+
+    try {
+      const res = await fetch("http://localhost:5000/analyze_age", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ age: Number(age) }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setAgeAnalysis(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAgeLoading(false);
+    }
+  };
+
   const safeToFixed = (num, digits = 2, fallback = "N/A") =>
     typeof num === "number" && !isNaN(num) ? num.toFixed(digits) : fallback;
 
@@ -72,6 +100,8 @@ function AnalysisPage() {
         <p>
           Upload your <b>screen time survey</b> CSV file to analyze vision risk.
         </p>
+
+        {/* Upload Section */}
         <div className="upload-area">
           <input type="file" accept=".csv" onChange={handleFileChange} />
           {fileName && (
@@ -87,8 +117,10 @@ function AnalysisPage() {
             {loading ? "Analyzing..." : "Run Analysis"}
           </button>
         </div>
+
         {error && <div className="error-message">{error}</div>}
 
+        {/* Display Results */}
         {result && !result.error && (
           <div className="results">
             <h3>Summary:</h3>
@@ -115,7 +147,7 @@ function AnalysisPage() {
               {[
                 "Low Exposure - Healthy Visual Ergonomics",
                 "Moderate Exposure - Normal Ocular Endurance",
-                "High Exposure - Digital Eye Strain Risk"
+                "High Exposure - Digital Eye Strain Risk",
               ].map((category) => (
                 <li key={category}>
                   <b>{category}:</b>{" "}
@@ -127,7 +159,7 @@ function AnalysisPage() {
               ))}
             </ul>
 
-            {/* Display all charts if present */}
+            {/* Charts */}
             {result?.charts?.visualizations && (
               <>
                 <h3>Visualizations:</h3>
@@ -160,23 +192,26 @@ function AnalysisPage() {
               </>
             )}
 
-            {/* NEW: Display Vision Precautions by Category */}
+            {/* Precautions */}
             {result?.vision_precautions && (
               <div style={{ marginTop: "30px" }}>
                 <h3>Precautions for Each Vision Risk Category:</h3>
-                {Object.entries(result.vision_precautions).map(([category, points]) => (
-                  <div key={category} style={{ marginBottom: "20px" }}>
-                    <b>{category}</b>
-                    <ul>
-                      {points.map((pt, idx) => (
-                        <li key={idx}>{pt}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                {Object.entries(result.vision_precautions).map(
+                  ([category, points]) => (
+                    <div key={category} style={{ marginBottom: "20px" }}>
+                      <b>{category}</b>
+                      <ul>
+                        {points.map((pt, idx) => (
+                          <li key={idx}>{pt}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                )}
               </div>
             )}
 
+            {/* Device Summary */}
             {result?.device_usage_summary && (
               <>
                 <h3>Device/App Usage Summary (if available):</h3>
@@ -186,33 +221,104 @@ function AnalysisPage() {
               </>
             )}
 
+            {/* Processed Data Table */}
             <h3>Sample Processed Data (First 10 rows):</h3>
-            <table>
-              <thead>
-                <tr>
-                  {result?.processed_data_sample &&
-                    result.processed_data_sample.length > 0 &&
-                    Object.keys(result.processed_data_sample[0]).map((col) => (
-                      <th key={col}>{col}</th>
-                    ))}
-                </tr>
-              </thead>
-              <tbody>
-                {result?.processed_data_sample &&
-                  result.processed_data_sample.map((row, idx) => (
-                    <tr key={idx}>
-                      {Object.values(row).map((val, i) => (
-                        <td key={i}>{val === null || val === undefined ? "-" : val.toString()}</td>
+            <div style={{ overflowX: "auto" }}>
+              <table>
+                <thead>
+                  <tr>
+                    {result?.processed_data_sample &&
+                      result.processed_data_sample.length > 0 &&
+                      Object.keys(result.processed_data_sample[0]).map((col) => (
+                        <th key={col}>{col}</th>
                       ))}
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {result?.processed_data_sample &&
+                    result.processed_data_sample.map((row, idx) => (
+                      <tr key={idx}>
+                        {Object.values(row).map((val, i) => (
+                          <td key={i}>
+                            {val === null || val === undefined
+                              ? "-"
+                              : val.toString()}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
 
-        {result && result.error && (
-          <div className="error-message">{result.error}</div>
+            {/* 🔹 Age Group Analysis Section */}
+            <div className="age-section">
+              <h3>Analyze Vision Status by Age Group</h3>
+              <div style={{ marginTop: "10px" }}>
+                <input
+                  type="number"
+                  placeholder="Enter Age"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  style={{ padding: "8px", marginRight: "10px" }}
+                />
+                <button
+                  className="primary-btn"
+                  disabled={ageLoading}
+                  onClick={handleAgeAnalysis}
+                >
+                  {ageLoading ? "Analyzing..." : "Analyze by Age"}
+                </button>
+              </div>
+
+              {ageAnalysis && (
+                <div style={{ marginTop: "25px" }}>
+                  <h4>Age Group: {ageAnalysis.age_group}</h4>
+
+                  {ageAnalysis.records && ageAnalysis.records.length > 0 ? (
+                    <>
+                      <h4>People in this Age Group:</h4>
+                      <table>
+                        <thead>
+                          <tr>
+                            {Object.keys(ageAnalysis.records[0]).map((col) => (
+                              <th key={col}>{col}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ageAnalysis.records.map((row, idx) => (
+                            <tr key={idx}>
+                              {Object.values(row).map((val, i) => (
+                                <td key={i}>{val}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {ageAnalysis.chart_url && (
+                        <img
+                          src={ageAnalysis.chart_url}
+                          alt="Age Group Vision Distribution"
+                          style={{
+                            maxWidth: "100%",
+                            marginTop: "20px",
+                            borderRadius: "10px",
+                            boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
+                          }}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <p style={{ color: "gray", marginTop: "15px" }}>
+                      No records found for this age group.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>

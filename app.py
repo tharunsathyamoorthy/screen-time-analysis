@@ -16,6 +16,9 @@ import uuid
 app = Flask(__name__)
 CORS(app)
 
+# NEW: Global DataFrame to reuse for /analyze_age
+uploaded_df = None
+
 POSSIBLE_COLUMNS = {
     "app_usage_time_min_day": 60,
     "app_usage_time_min_per_day": 60,
@@ -83,9 +86,73 @@ def generate_visualizations(df):
         os.makedirs(static_folder)
     img_urls = []
 
-    # Original 2x2 grid plot
+    # Use seaborn theme for clarity
+    sns.set_theme(style="whitegrid", context="talk", palette="colorblind")
+
+    # Vision Risk by Age Group - clear, neat
+    fig2, ax2 = plt.subplots(figsize=(9, 6))
+    if 'Age_Group' not in df.columns:
+        age_group_map = df["Age"].apply(lambda age: "Unknown" if pd.isna(age) else (
+            "18-25" if age <= 25 else "26-35" if age <= 35 else "36-45" if age <= 45 else "46-55" if age <= 55 else "56+"))
+        df["Age_Group"] = age_group_map
+    age_risk = pd.crosstab(df["Age_Group"], df["Vision_Status"])
+    line_colors = ['#0072BD', '#ED7D31', '#228B22']
+
+    for idx, status in enumerate(age_risk.columns):
+        ax2.plot(
+            age_risk.index, age_risk[status],
+            marker='o', linewidth=3, label=status, color=line_colors[idx % len(line_colors)]
+        )
+        for i, v in enumerate(age_risk[status]):
+            ax2.annotate(
+                str(v), (i, v), textcoords="offset points", xytext=(0, 8),
+                ha='center', fontsize=13, color=line_colors[idx % len(line_colors)], fontweight='bold'
+            )
+    ax2.set_title("Vision Risk by Age Group", fontsize=18, fontweight='bold', pad=15)
+    ax2.set_xlabel("Age Group", fontsize=15)
+    ax2.set_ylabel("Count", fontsize=15)
+    ax2.legend(title="Risk Category", fontsize=12)
+    ax2.grid(True, linestyle='--', alpha=0.5)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+    fig2.tight_layout()
+    file2 = f"vision_age_group_{uuid.uuid4().hex}.png"
+    filepath2 = os.path.join(static_folder, file2)
+    plt.savefig(filepath2, dpi=180, bbox_inches='tight')
+    plt.close(fig2)
+    img_urls.append(f"/static/{file2}")
+
+    # Vision Risk Distribution - clear, neat
+    fig1, ax1 = plt.subplots(figsize=(8, 6))
+    status_counts = df['Vision_Status'].value_counts()
+    ax1.plot(
+        status_counts.index, status_counts.values, marker='o',
+        color='#1f77b4', linewidth=3
+    )
+    for i, value in enumerate(status_counts.values):
+        ax1.annotate(
+            str(value), (i, value), textcoords="offset points", xytext=(0, 8),
+            ha='center', fontsize=14, color='#1f77b4', fontweight='bold'
+        )
+    ax1.set_title("Vision Risk Distribution", fontsize=18, fontweight='bold', pad=15)
+    ax1.set_xlabel("Vision Status", fontsize=15)
+    ax1.set_ylabel("Count", fontsize=15)
+    ax1.grid(True, linestyle='--', alpha=0.5)
+    ax1.set_xticks(range(len(status_counts.index)))
+    ax1.set_xticklabels(status_counts.index, rotation=20, ha='right')
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+    fig1.tight_layout()
+    file1 = f"vision_risk_dist_{uuid.uuid4().hex}.png"
+    filepath1 = os.path.join(static_folder, file1)
+    plt.savefig(filepath1, dpi=180, bbox_inches='tight')
+    plt.close(fig1)
+    img_urls.append(f"/static/{file1}")
+
+    # 2x2 grid plot with clear line graphs for all except the histogram
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
+    # Distribution of Daily Screen Time (histogram + kde)
     sns.histplot(df["Daily_Screen_Time_Hours"], bins=20, kde=True, color="blue", ax=axes[0, 0])
     axes[0, 0].axvline(df["Daily_Screen_Time_Hours"].mean(), color="red", linestyle="--", label="Mean")
     axes[0, 0].set_title("Distribution of Daily Screen Time (Hours)")
@@ -93,70 +160,47 @@ def generate_visualizations(df):
     axes[0, 0].set_ylabel("Count")
     axes[0, 0].legend()
 
+    # Average Time Spent by App Category (line graph)
     usage_cols = ["Social_Media_Usage_Hours", "Productivity_App_Usage_Hours", "Gaming_App_Usage_Hours"]
     avg_usage = df[usage_cols].mean().reset_index()
     avg_usage.columns = ["App_Type", "Average_Hours"]
-    # Changed barplot to line graph
-    axes[0, 1].plot(avg_usage["App_Type"], avg_usage["Average_Hours"], marker='o', color='purple', linewidth=2)
+    axes[0, 1].plot(avg_usage["App_Type"], avg_usage["Average_Hours"], marker='o', color='purple', linewidth=3)
+    for i, v in enumerate(avg_usage["Average_Hours"]):
+        axes[0, 1].text(i, v, f"{v:.2f}", color='purple', fontweight='bold', ha='center', va='bottom', fontsize=13)
     axes[0, 1].set_title("Average Time Spent by App Category")
     axes[0, 1].set_ylabel("Average Hours/Day")
     axes[0, 1].tick_params(axis='x', rotation=45)
 
-    sns.boxplot(x="Gender", y="Daily_Screen_Time_Hours", data=df, ax=axes[1, 0])
+    # Screen Time Distribution by Gender (line graph)
+    gender_group = df.groupby("Gender")["Daily_Screen_Time_Hours"].mean().reset_index()
+    axes[1, 0].plot(gender_group["Gender"], gender_group["Daily_Screen_Time_Hours"], marker='o', color='teal', linewidth=3)
+    for i, v in enumerate(gender_group["Daily_Screen_Time_Hours"]):
+        axes[1, 0].text(i, v, f"{v:.2f}", color='teal', fontweight='bold', ha='center', va='bottom', fontsize=13)
     axes[1, 0].set_title("Screen Time Distribution by Gender")
+    axes[1, 0].set_xlabel("Gender")
+    axes[1, 0].set_ylabel("Average Daily Screen Time (Hours)")
 
-    sns.boxplot(x="Age_Group", y="Daily_Screen_Time_Hours", data=df, ax=axes[1, 1])
+    # Screen Time Distribution by Age Group (line graph)
+    age_group = df.groupby("Age_Group")["Daily_Screen_Time_Hours"].mean().reset_index()
+    axes[1, 1].plot(age_group["Age_Group"], age_group["Daily_Screen_Time_Hours"], marker='o', color='orange', linewidth=3)
+    for i, v in enumerate(age_group["Daily_Screen_Time_Hours"]):
+        axes[1, 1].text(i, v, f"{v:.2f}", color='orange', fontweight='bold', ha='center', va='bottom', fontsize=13)
     axes[1, 1].set_title("Screen Time Distribution by Age Group")
+    axes[1, 1].set_xlabel("Age_Group")
+    axes[1, 1].set_ylabel("Average Daily Screen Time (Hours)")
 
     plt.tight_layout()
     filename = f"visualizations_{uuid.uuid4().hex}.png"
     filepath = os.path.join(static_folder, filename)
-    plt.savefig(filepath)
+    plt.savefig(filepath, dpi=120, bbox_inches='tight')
     plt.close()
     img_urls.append(f"/static/{filename}")
-
-    # Vision Risk Distribution line graph (was bar chart)
-    fig1, ax1 = plt.subplots(figsize=(7, 6))
-    status_counts = df['Vision_Status'].value_counts()
-    ax1.plot(status_counts.index, status_counts.values, marker='o', color='blue', linewidth=2)
-    ax1.set_title("Vision Risk Distribution")
-    ax1.set_xlabel("Vision_Status")
-    ax1.set_ylabel("Count")
-    ax1.set_xticks(range(len(status_counts.index)))
-    ax1.set_xticklabels(status_counts.index, rotation=45)
-    for i, value in enumerate(status_counts.values):
-        ax1.text(i, value, str(value), ha='center', va='bottom', fontweight='bold')
-    file1 = f"vision_risk_dist_{uuid.uuid4().hex}.png"
-    filepath1 = os.path.join(static_folder, file1)
-    plt.tight_layout()
-    plt.savefig(filepath1)
-    plt.close(fig1)
-    img_urls.append(f"/static/{file1}")
-
-    # Vision Risk by Age Group line graph (was bar chart)
-    fig2, ax2 = plt.subplots(figsize=(7,6))
-    if 'Age_Group' not in df.columns:
-        age_group_map = df["Age"].apply(lambda age: "Unknown" if pd.isna(age) else (
-            "18-25" if age <= 25 else "26-35" if age <= 35 else "36-45" if age <= 45 else "46-55" if age <= 55 else "56+"))
-        df["Age_Group"] = age_group_map
-    age_risk = pd.crosstab(df["Age_Group"], df["Vision_Status"])
-    for status in age_risk.columns:
-        ax2.plot(age_risk.index, age_risk[status], marker='o', linewidth=2, label=status)
-    ax2.set_title("Vision Risk by Age Group")
-    ax2.set_xlabel("Age_Group")
-    ax2.set_ylabel("count")
-    plt.legend(title="Risk Category")
-    plt.tight_layout()
-    file2 = f"vision_age_group_{uuid.uuid4().hex}.png"
-    filepath2 = os.path.join(static_folder, file2)
-    plt.savefig(filepath2)
-    plt.close(fig2)
-    img_urls.append(f"/static/{file2}")
 
     return img_urls
 
 @app.route('/upload', methods=['POST'])
 def upload_and_analyze():
+    global uploaded_df
     if 'file' not in request.files:
         return jsonify({"error": "CSV file is required"}), 400
     file = request.files['file']
@@ -247,6 +291,9 @@ def upload_and_analyze():
     inv_label_mapping = {v: k for k, v in label_mapping.items()}
     df['Predicted_Vision_Status'] = [inv_label_mapping.get(p, VISION_CATEGORIES[0]) for p in predictions]
 
+    # Save uploaded df globally for analyze_age endpoint
+    uploaded_df = df.copy()
+
     visualization_urls = generate_visualizations(df)
 
     HIGH_VISION_RISK_PRECAUTIONS = [
@@ -254,12 +301,9 @@ def upload_and_analyze():
         "Follow the 20-20-20 rule: take a 20-second break every 20 minutes by looking at something 20 feet away.",
         "Use blue light filters or night modes on all devices, especially after sunset.",
         "Ensure proper ambient lighting to reduce glare and avoid working in dark rooms.",
-        "Place screens at eye level and about 18–24 inches from your eyes.",
+        "Place screens at eye level and about 18-24 inches from your eyes.",
         "Blink frequently to minimize dryness; consider lubricating drops if needed.",
         "Schedule regular eye exams and seek advice if persistent discomfort occurs.",
-        "Avoid device usage 1 hour before bedtime to improve sleep quality.",
-        "Use anti-reflective screen protectors where possible.",
-        "Adjust device font size and contrast for maximum comfort.",
         "Keep device screens clean to avoid straining over smudges or dirt.",
         "Practice comprehensive eye exercises (focus shifting, rolling, palming).",
         "Limit multitasking across multiple screens/devices at the same time.",
@@ -302,9 +346,16 @@ def upload_and_analyze():
 
     processed_data_sample = df.head(10).to_dict(orient="records")
     avg_screen_time = df["screen_time_hr"].mean()
-    threshold = avg_screen_time
+    threshold = 6  # Set threshold to 6 hours per day
     exceed_pct = (df["screen_time_hr"] > threshold).mean() * 100
-    health_trends = df["Vision_Status"].value_counts().reindex(VISION_CATEGORIES, fill_value=0).to_dict()
+    # Map short to long descriptions for health_trends
+    exposure_map = {
+        "Low Exposure": "Low Exposure - Healthy Visual Ergonomics",
+        "Moderate Exposure": "Moderate Exposure - Normal Ocular Endurance",
+        "High Exposure": "High Exposure - Digital Eye Strain Risk"
+    }
+    vision_status_long = df["Vision_Status"].map(exposure_map)
+    health_trends = vision_status_long.value_counts().reindex(VISION_CATEGORIES, fill_value=0).to_dict()
 
     return jsonify({
         "average_screen_time_hours": avg_screen_time,
@@ -318,6 +369,137 @@ def upload_and_analyze():
         },
         "vision_precautions": vision_precautions,
         "model_test_accuracy": float(accuracy)
+    })
+
+# NEW endpoint (only addition): analyze_age — returns table + chart for given age group
+@app.route('/analyze_age', methods=['POST'])
+def analyze_age():
+    global uploaded_df
+    if uploaded_df is None:
+        return jsonify({"error": "No dataset uploaded yet. Please upload a file first."}), 400
+
+    data = request.get_json()
+    if not data or "age" not in data:
+        return jsonify({"error": "Age value required in JSON format (e.g. {'age': 25})"}), 400
+
+    try:
+        age = int(data["age"])
+    except Exception:
+        return jsonify({"error": "Invalid age value."}), 400
+
+    # Determine group label consistent with your assign_grp logic
+    if age <= 25:
+        group = "18-25"
+    elif age <= 35:
+        group = "26-35"
+    elif age <= 45:
+        group = "36-45"
+    elif age <= 55:
+        group = "46-55"
+    else:
+        group = "56+"
+
+    # Ensure Age_Group exists
+    if 'Age_Group' not in uploaded_df.columns:
+        uploaded_df['Age_Group'] = uploaded_df['Age'].apply(assign_age_group)
+
+    group_df = uploaded_df[uploaded_df['Age_Group'] == group]
+
+    if group_df.empty:
+        return jsonify({"message": f"No records found for age group {group}."}), 404
+
+    # Create chart for this age group
+    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    if not os.path.exists(static_folder):
+        os.makedirs(static_folder)
+
+    # Use a non-interactive backend for matplotlib to avoid Tkinter/threading errors
+    import matplotlib
+    matplotlib.use('Agg')
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    counts = group_df["Vision_Status"].value_counts()
+    # LINE GRAPH HERE INSTEAD OF BAR GRAPH
+    ax.plot(counts.index, counts.values, marker='o', color='#1f77b4', linewidth=3)
+    for i, value in enumerate(counts.values):
+        ax.annotate(
+            str(value), (i, value), textcoords="offset points", xytext=(0, 8),
+            ha='center', fontsize=12, color='#1f77b4', fontweight='bold'
+        )
+    ax.set_title(f"Vision Status Distribution for Age Group {group}", fontsize=14, fontweight='bold')
+    ax.set_xlabel("Vision Status")
+    ax.set_ylabel("Count")
+    plt.xticks(rotation=20)
+    plt.tight_layout()
+
+    file_name = f"age_group_{group}_{uuid.uuid4().hex}.png"
+    file_path = os.path.join(static_folder, file_name)
+    plt.savefig(file_path, dpi=150, bbox_inches='tight')
+    plt.close()
+
+    chart_url = f"/static/{file_name}"
+
+    # Return data and chart URL (include Predicted_Vision_Status if available)
+    cols = [c for c in ['Name', 'Age', 'Gender', 'Vision_Status', 'Predicted_Vision_Status'] if c in group_df.columns]
+    records = group_df[cols].head(20).to_dict(orient='records')
+
+    vision_status_summary = counts.to_dict()
+
+    HIGH_VISION_RISK_PRECAUTIONS = [
+        "Limit continuous screen time to no more than 30–40 minutes at a stretch.",
+        "Follow the 20-20-20 rule: take a 20-second break every 20 minutes by looking at something 20 feet away.",
+        "Use blue light filters or night modes on all devices, especially after sunset.",
+        "Ensure proper ambient lighting to reduce glare and avoid working in dark rooms.",
+        "Place screens at eye level and about 18-24 inches from your eyes.",
+        "Blink frequently to minimize dryness; consider lubricating drops if needed.",
+        "Schedule regular eye exams and seek advice if persistent discomfort occurs.",
+        "Keep device screens clean to avoid straining over smudges or dirt.",
+        "Practice comprehensive eye exercises (focus shifting, rolling, palming).",
+        "Limit multitasking across multiple screens/devices at the same time.",
+        "Maintain ergonomic posture, supporting your back, shoulders, and neck.",
+        "Consider using screen time management apps to monitor and reduce your digital exposure.",
+    ]
+
+    MODERATE_VISION_RISK_PRECAUTIONS = [
+        "Set daily limits for total recreational screen time, aiming for under 2 hours outside work/study.",
+        "Integrate frequent, short breaks to avoid prolonged sessions.",
+        "Use blue light reduction settings in the evening and increase ambient light during the day.",
+        "Increase physical activity and balance screen work with outdoor breaks.",
+        "Monitor for early symptoms: dryness, headaches, blurry vision.",
+        "Prioritize larger screens for reading or extended work sessions over small mobile devices.",
+        "Avoid staring at small text or poorly contrasted screens for long periods.",
+        "Check device ergonomics—screen tilt, height, and brightness should minimize squinting.",
+        "Plan device-free family or personal time blocks daily.",
+        "Encourage children/adolescents to follow healthy device habits with gentle supervision.",
+        "Wear prescription eyewear if indicated and consult an optometrist for special screen-use lenses if discomfort arises.",
+    ]
+
+    LOW_VISION_RISK_PRECAUTIONS = [
+        "Continue healthy visual habits and regular blinking.",
+        "Include screen-free activities in your daily routine.",
+        "Maintain good lighting at your workspace.",
+        "Stay hydrated for optimal eye health.",
+        "Monitor for new screen-related symptoms, even if rare.",
+        "Adjust brightness to natural room light; avoid overly bright/dim screens.",
+        "Periodically check your device usage to ensure minimal risk.",
+        "Dedicate time for outdoor eyesight exercise (natural focusing).",
+        "Avoid using screens while commuting or in moving vehicles.",
+        "Prioritize sleep routines by finishing screen work well before bedtime.",
+    ]
+
+    vision_precautions = {
+        "High Exposure": HIGH_VISION_RISK_PRECAUTIONS,
+        "Moderate Exposure": MODERATE_VISION_RISK_PRECAUTIONS,
+        "Low Exposure": LOW_VISION_RISK_PRECAUTIONS,
+    }
+
+    return jsonify({
+        "age_group": group,
+        "total_records": int(len(group_df)),
+        "vision_status_summary": vision_status_summary,
+        "chart_url": chart_url,
+        "records": records,
+        "vision_precautions": vision_precautions  # include existing precautions for frontend use
     })
 
 if __name__ == "__main__":
