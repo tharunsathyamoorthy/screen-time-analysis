@@ -86,10 +86,8 @@ def generate_visualizations(df):
         os.makedirs(static_folder)
     img_urls = []
 
-    # Use seaborn theme for clarity
     sns.set_theme(style="whitegrid", context="talk", palette="colorblind")
 
-    # Vision Risk by Age Group - clear, neat
     fig2, ax2 = plt.subplots(figsize=(9, 6))
     if 'Age_Group' not in df.columns:
         age_group_map = df["Age"].apply(lambda age: "Unknown" if pd.isna(age) else (
@@ -122,7 +120,6 @@ def generate_visualizations(df):
     plt.close(fig2)
     img_urls.append(f"/static/{file2}")
 
-    # Vision Risk Distribution - clear, neat
     fig1, ax1 = plt.subplots(figsize=(8, 6))
     status_counts = df['Vision_Status'].value_counts()
     ax1.plot(
@@ -149,10 +146,8 @@ def generate_visualizations(df):
     plt.close(fig1)
     img_urls.append(f"/static/{file1}")
 
-    # 2x2 grid plot with clear line graphs for all except the histogram
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
-    # Distribution of Daily Screen Time (histogram + kde)
     sns.histplot(df["Daily_Screen_Time_Hours"], bins=20, kde=True, color="blue", ax=axes[0, 0])
     axes[0, 0].axvline(df["Daily_Screen_Time_Hours"].mean(), color="red", linestyle="--", label="Mean")
     axes[0, 0].set_title("Distribution of Daily Screen Time (Hours)")
@@ -160,7 +155,6 @@ def generate_visualizations(df):
     axes[0, 0].set_ylabel("Count")
     axes[0, 0].legend()
 
-    # Average Time Spent by App Category (line graph)
     usage_cols = ["Social_Media_Usage_Hours", "Productivity_App_Usage_Hours", "Gaming_App_Usage_Hours"]
     avg_usage = df[usage_cols].mean().reset_index()
     avg_usage.columns = ["App_Type", "Average_Hours"]
@@ -171,7 +165,6 @@ def generate_visualizations(df):
     axes[0, 1].set_ylabel("Average Hours/Day")
     axes[0, 1].tick_params(axis='x', rotation=45)
 
-    # Screen Time Distribution by Gender (line graph)
     gender_group = df.groupby("Gender")["Daily_Screen_Time_Hours"].mean().reset_index()
     axes[1, 0].plot(gender_group["Gender"], gender_group["Daily_Screen_Time_Hours"], marker='o', color='teal', linewidth=3)
     for i, v in enumerate(gender_group["Daily_Screen_Time_Hours"]):
@@ -180,7 +173,6 @@ def generate_visualizations(df):
     axes[1, 0].set_xlabel("Gender")
     axes[1, 0].set_ylabel("Average Daily Screen Time (Hours)")
 
-    # Screen Time Distribution by Age Group (line graph)
     age_group = df.groupby("Age_Group")["Daily_Screen_Time_Hours"].mean().reset_index()
     axes[1, 1].plot(age_group["Age_Group"], age_group["Daily_Screen_Time_Hours"], marker='o', color='orange', linewidth=3)
     for i, v in enumerate(age_group["Daily_Screen_Time_Hours"]):
@@ -212,7 +204,6 @@ def upload_and_analyze():
     if df is None:
         return jsonify(info), 400
 
-    # Advanced features & encoding if applicable
     if all(k in df.columns for k in ["Social_Media_Usage_Hours", "Gaming_App_Usage_Hours", "Productivity_App_Usage_Hours",
                                      "Daily_Screen_Time_Hours", "Age", "Gender", "Location"]):
         df['Total_App_Usage'] = df['Social_Media_Usage_Hours'] + df['Gaming_App_Usage_Hours'] + df['Productivity_App_Usage_Hours']
@@ -259,7 +250,6 @@ def upload_and_analyze():
             else ("Low Exposure - Healthy Visual Ergonomics" if t < df["screen_time_hr"].mean() else "Moderate Exposure - Normal Ocular Endurance")
         )
 
-    # Deep learning model training
     features = []
     if all(col in df.columns for col in ['Social_Media_Usage_Hours', 'Gaming_App_Usage_Hours', 'Productivity_App_Usage_Hours', 'Daily_Screen_Time_Hours', 'Gender_Encoded', 'Location_Encoded']):
         features = ['Social_Media_Usage_Hours', 'Gaming_App_Usage_Hours', 'Productivity_App_Usage_Hours', 'Daily_Screen_Time_Hours', 'Gender_Encoded', 'Location_Encoded']
@@ -284,16 +274,16 @@ def upload_and_analyze():
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     model.fit(X_train, y_train, epochs=15, batch_size=16, verbose=0)
 
+    # Model accuracy evaluation and print to terminal
     loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+    print(f"Model Test Accuracy: {accuracy:.4f}")
 
     predictions_prob = model.predict(X)
     predictions = predictions_prob.argmax(axis=1)
     inv_label_mapping = {v: k for k, v in label_mapping.items()}
     df['Predicted_Vision_Status'] = [inv_label_mapping.get(p, VISION_CATEGORIES[0]) for p in predictions]
 
-    # Save uploaded df globally for analyze_age endpoint
     uploaded_df = df.copy()
-
     visualization_urls = generate_visualizations(df)
 
     HIGH_VISION_RISK_PRECAUTIONS = [
@@ -348,7 +338,6 @@ def upload_and_analyze():
     avg_screen_time = df["screen_time_hr"].mean()
     threshold = 6  # Set threshold to 6 hours per day
     exceed_pct = (df["screen_time_hr"] > threshold).mean() * 100
-    # Map short to long descriptions for health_trends
     exposure_map = {
         "Low Exposure": "Low Exposure - Healthy Visual Ergonomics",
         "Moderate Exposure": "Moderate Exposure - Normal Ocular Endurance",
@@ -371,7 +360,6 @@ def upload_and_analyze():
         "model_test_accuracy": float(accuracy)
     })
 
-# NEW endpoint (only addition): analyze_age — returns table + chart for given age group
 @app.route('/analyze_age', methods=['POST'])
 def analyze_age():
     global uploaded_df
@@ -387,7 +375,6 @@ def analyze_age():
     except Exception:
         return jsonify({"error": "Invalid age value."}), 400
 
-    # Determine group label consistent with your assign_grp logic
     if age <= 25:
         group = "18-25"
     elif age <= 35:
@@ -399,7 +386,6 @@ def analyze_age():
     else:
         group = "56+"
 
-    # Ensure Age_Group exists
     if 'Age_Group' not in uploaded_df.columns:
         uploaded_df['Age_Group'] = uploaded_df['Age'].apply(assign_age_group)
 
@@ -408,18 +394,15 @@ def analyze_age():
     if group_df.empty:
         return jsonify({"message": f"No records found for age group {group}."}), 404
 
-    # Create chart for this age group
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     if not os.path.exists(static_folder):
         os.makedirs(static_folder)
 
-    # Use a non-interactive backend for matplotlib to avoid Tkinter/threading errors
     import matplotlib
     matplotlib.use('Agg')
 
     fig, ax = plt.subplots(figsize=(7, 5))
     counts = group_df["Vision_Status"].value_counts()
-    # LINE GRAPH HERE INSTEAD OF BAR GRAPH
     ax.plot(counts.index, counts.values, marker='o', color='#1f77b4', linewidth=3)
     for i, value in enumerate(counts.values):
         ax.annotate(
@@ -439,7 +422,7 @@ def analyze_age():
 
     chart_url = f"/static/{file_name}"
 
-    # Return data and chart URL (include Predicted_Vision_Status if available)
+    # Updated cols to include screen_time_hr instead of Predicted_Vision_Status
     cols = [c for c in ['Name', 'Age', 'Gender', 'Vision_Status', 'screen_time_hr'] if c in group_df.columns]
     records = group_df[cols].head(20).to_dict(orient='records')
 
